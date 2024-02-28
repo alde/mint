@@ -28,7 +28,7 @@ func TestNextToken(t *testing.T) {
 		{token.BANG, "!"},
 		{token.EOF, ""},
 	}
-	l := NewLexer(input)
+	l := Create(input)
 	for i, tt := range tests {
 		tok := l.NextToken()
 		if tok.Type != tt.expectedType {
@@ -65,7 +65,7 @@ func TestNextTokenLongKeywords(t *testing.T) {
 		{token.RBRACE, "}"},
 		{token.EOF, ""},
 	}
-	l := NewLexer(input)
+	l := Create(input)
 	for i, tt := range tests {
 		tok := l.NextToken()
 		if tok.Type != tt.expectedType {
@@ -142,7 +142,7 @@ func TestNextTokenExtended(t *testing.T) {
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
-	l := NewLexer(input)
+	l := Create(input)
 	for i, tt := range tests {
 		tok := l.NextToken()
 		if tok.Type != tt.expectedType {
