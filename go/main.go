@@ -18,5 +18,4 @@ func main() {
 	fmt.Printf("Try out my language by typing in commands\n")
 
 	repl.Start(os.Stdin, os.Stdout)
-
 }
