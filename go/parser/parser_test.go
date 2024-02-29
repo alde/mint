@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strings"
 	"testing"
 
 	"alde.nu/mint/ast"
@@ -79,4 +80,34 @@ func checkParserErrors(t *testing.T, p *Parser) {
 		t.Errorf("parser error: %q", msg)
 	}
 	t.FailNow()
+}
+
+func TestReturnStatements(t *testing.T) {
+	input := `
+	return 5;
+	return 10;
+	return 993322;
+`
+
+	l := lexer.Create(input)
+	p := Create(l)
+
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	inputLen := len(strings.Split(strings.TrimSpace(input), "\n"))
+	if len(program.Statements) != inputLen {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d", inputLen, len(program.Statements))
+	}
+
+	for _, stmt := range program.Statements {
+		returnStatement, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("stmt not *ast.ReturnStatement. got=%T", returnStatement)
+			continue
+		}
+		if returnStatement.TokenLiteral() != "return" {
+			t.Errorf("returnStatement.TokenLiteral not 'return', got %q", returnStatement.TokenLiteral())
+		}
+	}
 }
