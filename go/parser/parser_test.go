@@ -315,7 +315,56 @@ func TestIfElseExpression(t *testing.T) {
 	if !testIdentifier(t, alternative.Expression, "y") {
 		return
 	}
+}
 
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y}`
+
+	program := initTests(t, input)
+	function := basicParsingChecks(t, program, 1, &ast.FunctionLiteral{})
+
+	if len(function.Parameters) != 2 {
+		t.Fatalf("function literal parameters wrong. Want 2, got %d\n", len(function.Parameters))
+	}
+	testLiteralExpression(t, function.Parameters[0], "x")
+	testLiteralExpression(t, function.Parameters[1], "y")
+
+	if len(function.Body.Statements) != 1 {
+		t.Fatalf("function.Body.Statements count is wrong. Expected %d, got %d\n", 1, len(function.Body.Statements))
+	}
+
+	body, ok := function.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("function.Body.Statement[0] is not an ast.ExpressionStatement, got=%T\n", function.Body.Statements[0])
+	}
+
+	testInfixExpression(t, body.Expression, "x", "+", "y")
+}
+
+func TestParameterParsin(t *testing.T) {
+	testData := []struct {
+		input    string
+		expected []string
+	}{
+		{input: `fn() {}`, expected: []string{}},
+		{input: `fn(x) {}`, expected: []string{"x"}},
+		{input: `fn(x, y, z) {}`, expected: []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range testData {
+		program := initTests(t, tt.input)
+
+		stmt := program.Statements[0].(*ast.ExpressionStatement)
+		function := stmt.Expression.(*ast.FunctionLiteral)
+
+		if len(function.Parameters) != len(tt.expected) {
+			t.Fatalf("wrong number of parameters, expected %d got %d", len(tt.expected), len(function.Parameters))
+		}
+
+		for i, ident := range tt.expected {
+			testLiteralExpression(t, function.Parameters[i], ident)
+		}
+	}
 }
 
 /// Helper functions /////////////////////////////////////////////////
@@ -339,7 +388,7 @@ func basicParsingChecks[T ast.Expression](t *testing.T, program *ast.Program, ex
 
 	exp, ok := stmt.Expression.(T)
 	if !ok {
-		t.Fatalf("stmt.Expression is not ast.IfExpression. got=%T", stmt.Expression)
+		t.Fatalf("stmt.Expression is not %T. got=%T", kind, stmt.Expression)
 	}
 
 	return exp
