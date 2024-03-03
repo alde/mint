@@ -157,24 +157,10 @@ func TestParsingPrefixExpressions(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		l := lexer.Create(tt.input)
-		p := Create(l)
-		program := p.ParseProgram()
-		checkParserErrors(t, p)
+		program := initTests(t, tt.input)
 
-		if len(program.Statements) != 1 {
-			t.Fatalf("program doesn't have expected number of statements, expected=%d, got=%d", 1, len(program.Statements))
-		}
+		exp := basicParsingChecks(t, program, 1, &ast.PrefixExpression{})
 
-		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
-		if !ok {
-			t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
-		}
-
-		exp, ok := stmt.Expression.(*ast.PrefixExpression)
-		if !ok {
-			t.Fatalf("stmt is not ast.PrefixExpression. got=%T", stmt.Expression)
-		}
 		if exp.Operator != tt.operator {
 			t.Fatalf("exp.Operator is not '%s'. got=%s", tt.operator, exp.Operator)
 		}
@@ -247,13 +233,15 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"false", "false"},
 		{"3>5 == false", "((3 > 5) == false)"},
 		{"3 < 5 == true", "((3 < 5) == true)"},
+		{"1+(2+3)+4", "((1 + (2 + 3)) + 4)"},
+		{"(3+4)*5", "((3 + 4) * 5)"},
+		{"2 / (5 + 5)", "(2 / (5 + 5))"},
+		{"-(5 + 5)", "(-(5 + 5))"},
+		{"!(true == true)", "(!(true == true))"},
 	}
 
 	for _, tt := range testData {
-		l := lexer.Create(tt.input)
-		p := Create(l)
-		program := p.ParseProgram()
-		checkParserErrors(t, p)
+		program := initTests(t, tt.input)
 
 		actual := program.String()
 		if actual != tt.expected {
@@ -262,7 +250,100 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 	}
 }
 
+func TestIfExpression(t *testing.T) {
+	input := "if (x < y) { x }"
+
+	program := initTests(t, input)
+
+	exp := basicParsingChecks(t, program, 1, &ast.IfExpression{})
+
+	if !testInfixExpression(t, exp.Condition, "x", "<", "y") {
+		return
+	}
+
+	if len(exp.Consequence.Statements) != 1 {
+		t.Errorf("consequence is not 1 statement. got=%d\n", len(exp.Consequence.Statements))
+	}
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("Statements[0] is not ast.ExpressionStatement. got=%T", exp.Consequence.Statements[0])
+
+	}
+	if !testIdentifier(t, consequence.Expression, "x") {
+		return
+	}
+	if exp.Alternative != nil {
+		t.Errorf("exp.Alternative.Statements was not nil. got=%+v", exp.Alternative)
+	}
+}
+
+func TestIfElseExpression(t *testing.T) {
+	input := "if (x < y) { x } else { y }"
+
+	program := initTests(t, input)
+
+	exp := basicParsingChecks(t, program, 1, &ast.IfExpression{})
+
+	if !testInfixExpression(t, exp.Condition, "x", "<", "y") {
+		return
+	}
+
+	if len(exp.Consequence.Statements) != 1 {
+		t.Errorf("consequence is not 1 statement. got=%d\n", len(exp.Consequence.Statements))
+	}
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("Statements[0] is not ast.ExpressionStatement. got=%T", exp.Consequence.Statements[0])
+
+	}
+	if !testIdentifier(t, consequence.Expression, "x") {
+		return
+	}
+	if exp.Alternative == nil {
+		t.Errorf("exp.Alternative.Statements was nil. got=%+v", exp.Alternative)
+	}
+	if len(exp.Alternative.Statements) != 1 {
+		t.Errorf("exp.Alternative.Statements does not contain 1 statement. got=%d\n", len(exp.Alternative.Statements))
+	}
+
+	alternative, ok := exp.Alternative.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("Statements[0] is not ast.ExpressionStatement. got=%T", exp.Alternative.Statements[0])
+	}
+	if !testIdentifier(t, alternative.Expression, "y") {
+		return
+	}
+
+}
+
 /// Helper functions /////////////////////////////////////////////////
+
+func initTests(t *testing.T, input string) *ast.Program {
+	l := lexer.Create(input)
+	p := Create(l)
+	defer checkParserErrors(t, p)
+	return p.ParseProgram()
+}
+
+func basicParsingChecks[T ast.Expression](t *testing.T, program *ast.Program, expectedStatements int, kind T) T {
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(T)
+	if !ok {
+		t.Fatalf("stmt.Expression is not ast.IfExpression. got=%T", stmt.Expression)
+	}
+
+	return exp
+}
 
 func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 	if s.TokenLiteral() != "let" {
