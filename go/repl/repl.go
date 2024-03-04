@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"alde.nu/mint/evalutator"
 	"alde.nu/mint/lexer"
 	"alde.nu/mint/parser"
 	"github.com/fatih/color"
@@ -38,10 +39,14 @@ func Start(in io.Reader, out io.Writer) {
 			printParserErrors(out, p.Errors())
 			continue
 		}
-		index := fmt.Sprintf("%s%s%s ", green("["), yellow(num), green("]"))
-		io.WriteString(out, index)
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
+
+		evaluated := evalutator.Eval(program)
+		if evaluated != nil {
+			index := fmt.Sprintf("%s%s%s ", green("["), yellow(num), green("]"))
+			io.WriteString(out, index)
+			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
