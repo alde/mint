@@ -115,6 +115,40 @@ func Test_IfElseExpression(t *testing.T) {
 	}
 }
 
+func Test_ReturnStatement(t *testing.T) {
+	testData := []struct {
+		input    string
+		expected interface{}
+	}{
+		{"return 10;", 10},
+		{"return 10; 9;", 10},
+		{"return 2 * 5; 9;", 10},
+		{"9; return 2*5; 9;", 10},
+		{"return true;", true},
+		{"return false;", false},
+		{`
+		if (10 > 1) {
+			if (10 > 1) {
+				return 10;
+			}
+			return 1;
+		}`, 10},
+	}
+
+	for _, tt := range testData {
+		evaluated := testEval(tt.input)
+
+		switch tt.expected.(type) {
+		case int:
+			integer, _ := tt.expected.(int)
+			testIntegerObject(t, evaluated, int64(integer))
+		case bool:
+			boolean, _ := tt.expected.(bool)
+			testBooleanObject(t, evaluated, bool(boolean))
+		}
+	}
+}
+
 /// Helper functions /////////////////////////////////////////////////
 
 func testEval(input string) object.Object {
