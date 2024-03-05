@@ -6,7 +6,7 @@ import (
 	"alde.nu/mint/token"
 )
 
-func TestNextToken(t *testing.T) {
+func Test_NextToken(t *testing.T) {
 	input := `=+(){},;-/*<>!`
 	tests := []struct {
 		expectedType    token.TokenType
@@ -42,7 +42,7 @@ func TestNextToken(t *testing.T) {
 	}
 }
 
-func TestNextTokenLongKeywords(t *testing.T) {
+func Test_NextTokenLongKeywords(t *testing.T) {
 	input := `if (true) { return false; } else { return true; }`
 	tests := []struct {
 		expectedType    token.TokenType
@@ -91,6 +91,8 @@ func TestNextTokenExtended(t *testing.T) {
 
 	10 == 10;
 	10 != 9;
+	"foobar"
+	"foo bar"
 	`
 	tests := []struct {
 		expectedType    token.TokenType
@@ -140,6 +142,8 @@ func TestNextTokenExtended(t *testing.T) {
 		{token.NOT_EQ, "!="},
 		{token.INT, "9"},
 		{token.SEMICOLON, ";"},
+		{token.STRING, "foobar"},
+		{token.STRING, "foo bar"},
 		{token.EOF, ""},
 	}
 	l := Create(input)

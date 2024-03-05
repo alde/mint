@@ -9,7 +9,7 @@ import (
 	"alde.nu/mint/token"
 )
 
-func TestLetStatements(t *testing.T) {
+func Test_LetStatements(t *testing.T) {
 	testData := []struct {
 		input              string
 		expectedIdentifier string
@@ -38,7 +38,7 @@ func TestLetStatements(t *testing.T) {
 	}
 }
 
-func TestReturnStatements(t *testing.T) {
+func Test_ReturnStatements(t *testing.T) {
 	testData := []struct {
 		input    string
 		expected interface{}
@@ -71,7 +71,7 @@ func TestReturnStatements(t *testing.T) {
 	}
 }
 
-func TestIdentifierExpression(t *testing.T) {
+func Test_IdentifierExpression(t *testing.T) {
 	input := "boo;"
 	l := lexer.Create(input)
 	p := Create(l)
@@ -90,7 +90,7 @@ func TestIdentifierExpression(t *testing.T) {
 	testLiteralExpression(t, stmt.Expression, "boo")
 }
 
-func TestBooleanExpression(t *testing.T) {
+func Test_BooleanExpression(t *testing.T) {
 	input := "true;"
 	l := lexer.Create(input)
 	p := Create(l)
@@ -121,7 +121,7 @@ func TestBooleanExpression(t *testing.T) {
 	}
 }
 
-func TestIntegerExpression(t *testing.T) {
+func Test_IntegerExpression(t *testing.T) {
 	input := "54;"
 	l := lexer.Create(input)
 	p := Create(l)
@@ -140,7 +140,7 @@ func TestIntegerExpression(t *testing.T) {
 	testLiteralExpression(t, stmt.Expression, 54)
 }
 
-func TestParsingPrefixExpressions(t *testing.T) {
+func Test_ParsingPrefixExpressions(t *testing.T) {
 	testData := []struct {
 		input    string
 		operator string
@@ -166,7 +166,7 @@ func TestParsingPrefixExpressions(t *testing.T) {
 	}
 }
 
-func TestParsingInfixExpressions(t *testing.T) {
+func Test_ParsingInfixExpressions(t *testing.T) {
 	testData := []struct {
 		input      string
 		leftValue  interface{}
@@ -208,7 +208,7 @@ func TestParsingInfixExpressions(t *testing.T) {
 	}
 }
 
-func TestOperatorPrecedenceParsing(t *testing.T) {
+func Test_OperatorPrecedenceParsing(t *testing.T) {
 	testData := []struct {
 		input    string
 		expected string
@@ -249,7 +249,7 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 	}
 }
 
-func TestIfExpression(t *testing.T) {
+func Test_IfExpression(t *testing.T) {
 	input := "if (x < y) { x }"
 
 	program := initTests(t, input)
@@ -277,7 +277,7 @@ func TestIfExpression(t *testing.T) {
 	}
 }
 
-func TestIfElseExpression(t *testing.T) {
+func Test_IfElseExpression(t *testing.T) {
 	input := "if (x < y) { x } else { y }"
 
 	program := initTests(t, input)
@@ -316,7 +316,7 @@ func TestIfElseExpression(t *testing.T) {
 	}
 }
 
-func TestFunctionLiteralParsing(t *testing.T) {
+func Test_FunctionLiteralParsing(t *testing.T) {
 	input := `fn(x, y) { x + y}`
 
 	program := initTests(t, input)
@@ -340,7 +340,7 @@ func TestFunctionLiteralParsing(t *testing.T) {
 	testInfixExpression(t, body.Expression, "x", "+", "y")
 }
 
-func TestParameterParsin(t *testing.T) {
+func Test_ParameterParsin(t *testing.T) {
 	testData := []struct {
 		input    string
 		expected []string
@@ -366,7 +366,7 @@ func TestParameterParsin(t *testing.T) {
 	}
 }
 
-func TestCallExpression(t *testing.T) {
+func Test_CallExpression(t *testing.T) {
 	input := `add(1, 2+3, 4 * 5)`
 	program := initTests(t, input)
 
@@ -385,7 +385,7 @@ func TestCallExpression(t *testing.T) {
 	testInfixExpression(t, exp.Arguments[2], 4, "*", 5)
 }
 
-func TestCallArgumentParsing(t *testing.T) {
+func Test_CallArgumentParsing(t *testing.T) {
 	testData := []struct {
 		input    string
 		expected []string
@@ -411,6 +411,21 @@ func TestCallArgumentParsing(t *testing.T) {
 	}
 }
 
+func Test_StringLiteralExpression(t *testing.T) {
+	input := `"hello world"`
+	program := initTests(t, input)
+
+	stmt := program.Statements[0].(*ast.ExpressionStatement)
+	literal, ok := stmt.Expression.(*ast.StringLiteral)
+	if !ok {
+		t.Fatalf("exp not *ast.StringLiteral, got %T", stmt.Expression)
+	}
+
+	if literal.Value != "hello world" {
+		t.Errorf("literal.Value not %q. got %q.", "hello world", literal.Value)
+	}
+}
+
 /// Helper functions /////////////////////////////////////////////////
 
 func initTests(t *testing.T, input string) *ast.Program {
@@ -421,8 +436,8 @@ func initTests(t *testing.T, input string) *ast.Program {
 }
 
 func basicParsingChecks[T ast.Expression](t *testing.T, program *ast.Program, expectedStatements int, kind T) T {
-	if len(program.Statements) != 1 {
-		t.Fatalf("program.Statements does not contain 1 statement. got=%d", len(program.Statements))
+	if len(program.Statements) != expectedStatements {
+		t.Fatalf("program.Statements does not contain %d statement. got=%d", expectedStatements, (program.Statements))
 	}
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)

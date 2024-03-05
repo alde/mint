@@ -168,6 +168,7 @@ func Test_ErrorHandling(t *testing.T) {
 			return 1;
 		}`, "unknown operator: BOOLEAN + BOOLEAN"},
 		{"foobar", "identifier not found: foobar"},
+		{`"hello" - "world"`, "unknown operator: STRING - STRING"},
 	}
 
 	for _, tt := range testData {
@@ -187,16 +188,24 @@ func Test_ErrorHandling(t *testing.T) {
 func Test_LetStatement(t *testing.T) {
 	testData := []struct {
 		input    string
-		expected int64
+		expected interface{}
 	}{
 		{"let a = 5; a;", 5},
 		{"let a = 5 * 5; a;", 25},
 		{"let a = 5; let b = a; b;", 5},
 		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+		{`let a = "foobar"; a;`, "foobar"},
 	}
 
 	for _, tt := range testData {
-		testIntegerObject(t, testEval(tt.input), tt.expected)
+		switch tt.expected.(type) {
+		case int:
+			i, _ := tt.expected.(int)
+			testIntegerObject(t, testEval(tt.input), int64(i))
+		case string:
+			s, _ := tt.expected.(string)
+			testStringObject(t, testEval(tt.input), s)
+		}
 	}
 }
 
@@ -248,6 +257,20 @@ func Test_Closures(t *testing.T) {
 	testIntegerObject(t, testEval(input), 4)
 }
 
+func Test_StringConcatenation(t *testing.T) {
+	input := `"foo" + "_" + "bar"`
+	expect := `foo_bar`
+
+	evaluated := testEval(input)
+	str, ok := evaluated.(*object.String)
+	if !ok {
+		t.Fatalf("object is not String, got %T (%+v)", evaluated, evaluated)
+	}
+	if str.Value != expect {
+		t.Errorf("String has wrong value. got %q.", str.Value)
+	}
+}
+
 /// Helper functions /////////////////////////////////////////////////
 
 func testEval(input string) object.Object {
@@ -264,6 +287,19 @@ func testIntegerObject(t *testing.T, obj object.Object, expected int64) bool {
 	}
 	if result.Value != expected {
 		t.Errorf("object has wrong value, got %d, want %d", result.Value, expected)
+		return false
+	}
+	return true
+}
+
+func testStringObject(t *testing.T, obj object.Object, expected string) bool {
+	result, ok := obj.(*object.String)
+	if !ok {
+		t.Errorf("object is not String, got %T (%+v)", obj, obj)
+		return false
+	}
+	if result.Value != expected {
+		t.Errorf("object has wrong value, got %q, want %q", result.Value, expected)
 		return false
 	}
 	return true
