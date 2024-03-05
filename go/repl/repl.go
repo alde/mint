@@ -30,7 +30,7 @@ func Start(in io.Reader, out io.Writer) {
 		if !scanned {
 			return
 		}
-		num += 1
+
 		line := scanner.Text()
 		l := lexer.Create(line)
 		p := parser.Create(l)
@@ -43,6 +43,8 @@ func Start(in io.Reader, out io.Writer) {
 
 		evaluated := evalutator.Eval(program, env)
 		if evaluated != nil {
+			num += 1
+
 			index := fmt.Sprintf("%s%s%s ", green("["), yellow(num), green("]"))
 			io.WriteString(out, index)
 			io.WriteString(out, evaluated.Inspect())
