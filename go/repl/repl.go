@@ -7,6 +7,7 @@ import (
 
 	"alde.nu/mint/evalutator"
 	"alde.nu/mint/lexer"
+	"alde.nu/mint/object"
 	"alde.nu/mint/parser"
 	"github.com/fatih/color"
 )
@@ -20,7 +21,7 @@ var (
 )
 
 func Start(in io.Reader, out io.Writer) {
-
+	env := object.CreateEnvironment()
 	scanner := bufio.NewScanner(in)
 	num := 0
 	for {
@@ -40,7 +41,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evalutator.Eval(program)
+		evaluated := evalutator.Eval(program, env)
 		if evaluated != nil {
 			index := fmt.Sprintf("%s%s%s ", green("["), yellow(num), green("]"))
 			io.WriteString(out, index)
