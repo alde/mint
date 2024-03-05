@@ -302,6 +302,28 @@ func Test_BuiltInFunctions(t *testing.T) {
 	}
 }
 
+func Test_TypeArgument(t *testing.T) {
+	testData := []struct {
+		input    string
+		expected string
+	}{
+		{`type("foo")`, "STRING"},
+		{`type(false)`, "BOOLEAN"},
+	}
+
+	for _, tt := range testData {
+		evaluated := testEval(tt.input)
+		tp, ok := evaluated.(*object.String)
+		if !ok {
+			t.Errorf("object is not String. got %T (%+v)", evaluated, evaluated)
+			continue
+		}
+		if string(tp.Value) != tt.expected {
+			t.Errorf("wrong type. \nexpected\t%q\nactual\t\t%q.", tt.expected, tp.Value)
+		}
+	}
+}
+
 /// Helper functions /////////////////////////////////////////////////
 
 func testEval(input string) object.Object {

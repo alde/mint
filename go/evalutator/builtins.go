@@ -1,8 +1,10 @@
 package evalutator
 
-import "alde.nu/mint/object"
+import (
+	"alde.nu/mint/object"
+)
 
-func length(args ...object.Object) object.Object {
+func lengthFn(args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments to `len`. got=%d, want=1", len(args))
 	}
@@ -15,8 +17,15 @@ func length(args ...object.Object) object.Object {
 	}
 }
 
+func typeFn(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of arguments to `type`. got=%d, want=1", len(args))
+	}
+
+	return &object.String{Value: string(args[0].Type())}
+}
+
 var builtins = map[string]*object.Builtin{
-	"len": {
-		Fn: length,
-	},
+	"len":  {Fn: lengthFn},
+	"type": {Fn: typeFn},
 }
