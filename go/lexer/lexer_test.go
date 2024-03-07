@@ -7,7 +7,7 @@ import (
 )
 
 func Test_NextToken(t *testing.T) {
-	input := `=+(){},;-/*<>!`
+	input := `=+(){},;-/*<>![]`
 	tests := []struct {
 		expectedType    token.TokenType
 		expectedLiteral string
@@ -26,6 +26,8 @@ func Test_NextToken(t *testing.T) {
 		{token.LT, "<"},
 		{token.GT, ">"},
 		{token.BANG, "!"},
+		{token.LBRACKET, "["},
+		{token.RBRACKET, "]"},
 		{token.EOF, ""},
 	}
 	l := Create(input)
@@ -79,7 +81,7 @@ func Test_NextTokenLongKeywords(t *testing.T) {
 	}
 }
 
-func TestNextTokenExtended(t *testing.T) {
+func Test_NextTokenExtended(t *testing.T) {
 	input := `let five = 5;
 	let ten = 10;
 	
@@ -93,6 +95,7 @@ func TestNextTokenExtended(t *testing.T) {
 	10 != 9;
 	"foobar"
 	"foo bar"
+	[1, 2];
 	`
 	tests := []struct {
 		expectedType    token.TokenType
@@ -144,6 +147,12 @@ func TestNextTokenExtended(t *testing.T) {
 		{token.SEMICOLON, ";"},
 		{token.STRING, "foobar"},
 		{token.STRING, "foo bar"},
+		{token.LBRACKET, "["},
+		{token.INT, "1"},
+		{token.COMMA, ","},
+		{token.INT, "2"},
+		{token.RBRACKET, "]"},
+		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
 	l := Create(input)

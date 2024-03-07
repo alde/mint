@@ -237,6 +237,8 @@ func Test_OperatorPrecedenceParsing(t *testing.T) {
 		{"a + add(b*c) + d", "((a + add((b * c))) + d)"},
 		{"add(a, b, 1, 2*3, 4+5, add(6, 7 + 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 + 8)))"},
 		{"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"},
+		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{"add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
 	}
 
 	for _, tt := range testData {
@@ -426,6 +428,45 @@ func Test_StringLiteralExpression(t *testing.T) {
 	}
 }
 
+func Test_ParseArrayLiteral(t *testing.T) {
+	input := `[1, 2*2, "foo", 3+3]`
+
+	program := initTests(t, input)
+
+	stmt, _ := program.Statements[0].(*ast.ExpressionStatement)
+	array, ok := stmt.Expression.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("exp is not ast.ArrayLiteral. got=%T", stmt.Expression)
+	}
+
+	if len(array.Elements) != 4 {
+		t.Fatalf("len(array.Elements) not 4. got %d", len(array.Elements))
+	}
+
+	testIntegerLiteral(t, array.Elements[0], 1)
+	testInfixExpression(t, array.Elements[1], 2, "*", 2)
+	testStringLiteral(t, array.Elements[2], "foo")
+	testInfixExpression(t, array.Elements[3], 3, "+", 3)
+}
+
+func Test_ParsingIndexExpressions(t *testing.T) {
+	input := `myArray[1+1]`
+	program := initTests(t, input)
+
+	stmt, _ := program.Statements[0].(*ast.ExpressionStatement)
+	indexExp, ok := stmt.Expression.(*ast.IndexExpression)
+	if !ok {
+		t.Fatalf("exp not *ast.IndexExpression. got=%T", stmt.Expression)
+	}
+
+	if !testIdentifier(t, indexExp.Left, "myArray") {
+		return
+	}
+	if !testInfixExpression(t, indexExp.Index, 1, "+", 1) {
+		return
+	}
+}
+
 /// Helper functions /////////////////////////////////////////////////
 
 func initTests(t *testing.T, input string) *ast.Program {
@@ -492,6 +533,26 @@ func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
 
 	if integer.TokenLiteral() != fmt.Sprintf("%d", value) {
 		t.Errorf("integer.TokenLiteral() not %d. got=%s", value, integer.TokenLiteral())
+		return false
+	}
+
+	return true
+}
+
+func testStringLiteral(t *testing.T, il ast.Expression, value string) bool {
+	str, ok := il.(*ast.StringLiteral)
+	if !ok {
+		t.Errorf("il not *ast.StringLiteral. got=%T", il)
+		return false
+	}
+
+	if str.Value != value {
+		t.Errorf("string.Value not %s. got=%s", value, str.Value)
+		return false
+	}
+
+	if str.TokenLiteral() != value {
+		t.Errorf("string.TokenLiteral() not %s. got=%s", value, str.TokenLiteral())
 		return false
 	}
 
