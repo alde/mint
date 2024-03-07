@@ -1,6 +1,8 @@
 package evalutator
 
 import (
+	"fmt"
+
 	"alde.nu/mint/object"
 )
 
@@ -89,6 +91,14 @@ func pushFn(args ...object.Object) object.Object {
 	return &object.Array{Elements: newElements}
 }
 
+func putsFn(args ...object.Object) object.Object {
+	for _, arg := range args {
+		fmt.Println(arg.Inspect())
+	}
+
+	return NULL
+}
+
 var builtins = map[string]*object.Builtin{
 	"len":   {Fn: lengthFn},
 	"type":  {Fn: typeFn},
@@ -96,4 +106,5 @@ var builtins = map[string]*object.Builtin{
 	"last":  {Fn: lastFn},
 	"rest":  {Fn: restFn},
 	"push":  {Fn: pushFn},
+	"puts":  {Fn: putsFn},
 }
