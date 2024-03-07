@@ -169,6 +169,7 @@ func Test_ErrorHandling(t *testing.T) {
 		}`, "unknown operator: BOOLEAN + BOOLEAN"},
 		{"foobar", "identifier not found: foobar"},
 		{`"hello" - "world"`, "unknown operator: STRING - STRING"},
+		{`{"name": "monkey"}[fn(x) { x }]`, "unusable as hash key: FUNCTION"},
 	}
 
 	for _, tt := range testData {
@@ -398,6 +399,72 @@ func Test_ArrayBuiltins(t *testing.T) {
 			if arr.Inspect() != tt.expected {
 				t.Errorf("array mismatch. \nexpected\t%q\nactual\t\t%q", tt.expected, arr.Inspect())
 			}
+		}
+	}
+}
+
+func Test_HashLiterals(t *testing.T) {
+	input := `let two = "two";
+	{
+		"one": 10-9,
+		two: 1+1,
+		"thr"+"ee": 6/2,
+		4:4,
+		true: 5,
+		false: 6
+	}
+	`
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Hash)
+	if !ok {
+		t.Fatalf("Eval didn't return Hash. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	expected := map[object.HashKey]int64{
+		(&object.String{Value: "one"}).HashKey():   1,
+		(&object.String{Value: "two"}).HashKey():   2,
+		(&object.String{Value: "three"}).HashKey(): 3,
+		(&object.Integer{Value: 4}).HashKey():      4,
+		(&object.Boolean{Value: true}).HashKey():   5,
+		(&object.Boolean{Value: false}).HashKey():  6,
+	}
+
+	if len(result.Pairs) != len(expected) {
+		t.Fatalf("Hash has wrong number of pairs. got=%d", len(result.Pairs))
+	}
+
+	for expectedKey, expectedValue := range expected {
+		pair, ok := result.Pairs[expectedKey]
+		if !ok {
+			t.Errorf("no pair for given key in Pairs")
+		}
+
+		testIntegerObject(t, pair.Value, expectedValue)
+	}
+}
+
+func Test_HashIndexExpressions(t *testing.T) {
+	testData := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`{"foo": 5}["foo"]`, 5},
+		{`{"foo": 5}["bar"]`, nil},
+		{`{}["foo"]`, nil},
+		{`{5: 5}[5]`, 5},
+		{`{true: 5}[true]`, 5},
+		{`{false: 5}[false]`, 5},
+	}
+
+	for _, tt := range testData {
+		evaluated := testEval(tt.input)
+
+		integer, ok := tt.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(integer))
+		} else {
+			testNullObject(t, evaluated)
 		}
 	}
 }
