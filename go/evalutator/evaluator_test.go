@@ -371,6 +371,37 @@ func Test_ArrayIndexExpressions(t *testing.T) {
 	}
 }
 
+func Test_ArrayBuiltins(t *testing.T) {
+	testData := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`len([1,2,3])`, 3},
+		{`first([1,2,3])`, 1},
+		{`last([1,2,3])`, 3},
+		{`rest([1,2,3])`, "[2, 3]"},
+		{`push([1,2,3], 4)`, "[1, 2, 3, 4]"},
+	}
+
+	for _, tt := range testData {
+		evaluated := testEval(tt.input)
+
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			arr, ok := evaluated.(*object.Array)
+			if !ok {
+				t.Errorf("response is not of type Array, got %T", evaluated)
+				continue
+			}
+			if arr.Inspect() != tt.expected {
+				t.Errorf("array mismatch. \nexpected\t%q\nactual\t\t%q", tt.expected, arr.Inspect())
+			}
+		}
+	}
+}
+
 /// Helper functions /////////////////////////////////////////////////
 
 func testEval(input string) object.Object {
