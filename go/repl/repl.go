@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 
-	"alde.nu/mint/evalutator"
+	"alde.nu/mint/compiler"
 	"alde.nu/mint/lexer"
-	"alde.nu/mint/object"
 	"alde.nu/mint/parser"
+	"alde.nu/mint/vm"
 	"github.com/fatih/color"
 )
 
@@ -21,7 +21,6 @@ var (
 )
 
 func Start(in io.Reader, out io.Writer) {
-	env := object.CreateEnvironment()
 	scanner := bufio.NewScanner(in)
 	num := 0
 	for {
@@ -45,13 +44,28 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evalutator.Eval(program, env)
-		if evaluated != nil {
+		comp := compiler.New()
+		err := comp.Compile(program)
+		if err != nil {
+			io.WriteString(out, red(fmt.Sprintf("Woops! Compilation failed:\n%s\n", err)))
+			continue
+		}
+
+		machine := vm.New(comp.Bytecode())
+		err = machine.Run()
+		if err != nil {
+			io.WriteString(out, red(fmt.Sprintf("Woops! Executing bytecode failed:\n%s\n", err)))
+			continue
+		}
+
+		stackTop := machine.StackTop()
+
+		if stackTop != nil {
 			num += 1
 
 			index := fmt.Sprintf("%s%s%s ", green("["), yellow(num), green("]"))
 			io.WriteString(out, index)
-			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, stackTop.Inspect())
 			io.WriteString(out, "\n")
 		}
 	}
